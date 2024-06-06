@@ -1,5 +1,22 @@
 from db import db
 
+class UserModel(db.Model):
+    __tablebname__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    real_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    access_level = db.Column(db.Integer, nullable=False, default=0)
+
+    corpora = db.relationship(
+        'CorpusModel',
+        back_populates='user',
+        lazy='dynamic',
+        cascade='all, delete',
+    )
+
 class CorpusModel(db.Model):
     __tablename__ = 'corpora'
 
@@ -37,23 +54,6 @@ class DocumentModel(db.Model):
     )
 
     corpus = db.relationship('CorpusModel', back_populates='documents')
-
-class UserModel(db.Model):
-    __tablebname__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    real_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    access_level = db.Column(db.Integer, nullable=False, default=0)
-
-    corpora = db.relationship(
-        'CorpusModel',
-        back_populates='user',
-        lazy='dynamic',
-        cascade='all, delete',
-    )
 
 class RevokedJWTModel(db.Model):
     __tablename__ = 'revoked_jwts'
