@@ -6,3 +6,4 @@ flask-sqlalchemy
 pyopenssl
 flask-jwt-extended
 argon2-cffi
+gunicorn

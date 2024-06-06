@@ -19,4 +19,5 @@ COPY . .
 
 
 #CMD find .
-CMD flask run --host 0.0.0.0 --cert adhoc
+#CMD flask run --host 0.0.0.0 --cert adhoc
+CMD gunicorn --bind 0.0.0.0:80 "app:create_app()"
