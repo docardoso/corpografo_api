@@ -39,7 +39,7 @@ class DocumentModel(db.Model):
     corpus = db.relationship('CorpusModel', back_populates='documents')
 
 class UserModel(db.Model):
-    __tablebname__ = 'users'
+    __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
