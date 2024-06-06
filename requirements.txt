@@ -1,0 +1,8 @@
+flask
+flask-smorest
+python-dotenv
+marshmallow
+flask-sqlalchemy
+pyopenssl
+flask-jwt-extended
+argon2-cffi
