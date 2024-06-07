@@ -1,6 +1,8 @@
+from time import time
+
 from argon2 import PasswordHasher
 from flask.views import MethodView
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from flask_jwt_extended import create_access_token, get_jwt
 from flask_smorest import Blueprint, abort
 
 from db import db
@@ -24,7 +26,7 @@ class UserPicker(MethodView):
         db.session.commit()
         return {'message': 'User deleted'}
 
-    @login_required(1)
+    @login_required(2)
     @blp.arguments(UserSchema)
     @blp.response(200, UserSchema)
     def put(self, user_data, user_id):
@@ -48,6 +50,9 @@ class User(MethodView):
         db.session.commit()
         return user
 
+@blp.route('/users')
+class Users(MethodView):
+    @login_required(2)
     @blp.response(200, LoginSchema(many=True))
     def get(self):
         return UserModel.query.all()
@@ -73,10 +78,11 @@ class Login(MethodView):
 @blp.route('/logout')
 class Logout(MethodView):
     @login_required()
-    #@blp.response(201, RevokedJWTSchema)
-    #@jwt_required()
     def post(self):
-        jwt = get_jwt()
-        db.session.add(RevokedJWTModel(jti=jwt['jti']))
+        revoked_jwt = RevokedJWTModel(
+            jti=get_jwt()['jti'],
+            timestamp=time.time(),
+        )
+        db.session.add(revoked_jwt)
         db.session.commit()
-        return {'access_token': jwt}
+        return {'revoked_jwt': revoked_jwt}

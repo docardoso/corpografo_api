@@ -59,3 +59,4 @@ class RevokedJWTModel(db.Model):
     __tablename__ = 'revoked_jwts'
 
     jti = db.Column(db.String(100), primary_key=True)
+    timestamp = db.Column(db.Float(), nullable=False)

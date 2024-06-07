@@ -1,8 +1,8 @@
-from flask_smorest import Blueprint
+from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 
-from db import db
-from models import DocumentModel
+from db import db, jwt_filter_by
+from models import DocumentModel, CorpusModel
 from schemas import DocumentSchema
 from security import login_required
 
@@ -33,9 +33,13 @@ class DocumentPicker(MethodView):
 
 @blp.route("/document")
 class Document(MethodView):
+    @login_required()
     @blp.arguments(DocumentSchema)
     @blp.response(201, DocumentSchema)
     def post(self, document_data):
+        if jwt_filter_by(CorpusModel, id=document_data['corpus_id']).first() is None:
+            abort(400, message='There is no relation between the referred corpus and user.')
+
         document = DocumentModel(**document_data)
         db.session.add(document)
         db.session.commit()
