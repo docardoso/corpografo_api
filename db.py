@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import get_jwt_identity
+from sqlalchemy.orm import DeclarativeBase
 
-db = SQLAlchemy()
+class Base(DeclarativeBase):
+    pass
 
-def jwt_filter_by(model, **criteria):
-    return db.session.query(model).filter_by(user_id=get_jwt_identity(), **criteria)
+db = SQLAlchemy(model_class=Base)
