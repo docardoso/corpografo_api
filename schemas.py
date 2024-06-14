@@ -21,12 +21,12 @@ class PlainUserSchema(LoginSchema):
 
 class CorpusSchema(PlainCorpusSchema):
     documents = fields.List(fields.Nested(PlainDocumentSchema()), dump_only=True)
-    user_id = fields.Int(required=True, dump_only=True)
-    user = fields.Nested(PlainUserSchema(), dump_only=True)
+    users = fields.List(fields.Nested(PlainUserSchema()), dump_only=True)
 
 class DocumentSchema(PlainDocumentSchema):
-    corpus_id = fields.Int(required=True)
-    corpus = fields.Nested(PlainCorpusSchema(), dump_only=True)
+    corpora = fields.List(fields.Nested(PlainCorpusSchema()), dump_only=True)
+    users = fields.List(fields.Nested(PlainUserSchema()), dump_only=True)
 
 class UserSchema(PlainUserSchema):
     corpora = fields.List(fields.Nested(PlainCorpusSchema()), dump_only=True)
+    documents = fields.List(fields.Nested(PlainDocumentSchema()), dump_only=True)

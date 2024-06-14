@@ -46,7 +46,7 @@ def create_app(db_url=None):
 
     @jwt.token_in_blocklist_loader
     def is_jwt_revoked(jwt_header, jwt_payload):
-        return db.session.get(models.RevokedJWTModel, jwt_payload['jti']) is not None
+        return db.session.get(models.RevokedJWT, jwt_payload['jti']) is not None
 
     return app
 

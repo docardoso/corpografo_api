@@ -4,38 +4,45 @@ from flask_jwt_extended import get_jwt_identity
 
 from sqlalchemy.exc import IntegrityError
 
-from db import db, jwt_filter_by
-from models import CorpusModel, DocumentModel
+from db import db
+from models import Corpus, User, UsersCorpora
 from schemas import CorpusSchema, PlainCorpusSchema, PlainDocumentSchema
-from security import login_required
+from util import login_required, get_current_user
 
 blp = Blueprint('Corpora', __name__, description='Operations on corpora')
 
+def get_user_corpus(corpus_id):
+    return db.session.query(UsersCorpora).get_or_404({
+        'corpus_id':corpus_id,
+        'user_id':get_jwt_identity(),
+    }).corpus
+
 @blp.route('/corpora')
-class Corpus(MethodView):
+class Corpora(MethodView):
     @login_required(2)
     @blp.response(200, CorpusSchema(many=True))
     def get(self):
-        return CorpusModel.query.all()
+        return Corpus.query.all()
 
 @blp.route('/corpus')
-class Corpus(MethodView):
+class CorpusView(MethodView):
     @login_required()
     @blp.response(200, PlainCorpusSchema(many=True))
     def get(self):
-        return jwt_filter_by(CorpusModel).all()
+        return get_current_user().corpora
 
     @login_required()
     @blp.arguments(PlainCorpusSchema)
     @blp.response(201, CorpusSchema)
     def post(self, corpus_data):
-        corpus = CorpusModel(**corpus_data)
-        corpus.user_id = get_jwt_identity()
+        corpus = Corpus(**corpus_data, users=[get_current_user()])
         db.session.add(corpus)
         try:
             db.session.commit()
-        except IntegrityError:
-            abort(400, message='The name of each corpus must be unique.')
+        except IntegrityError as e:
+            #db.session.rollback()
+            abort(400, message=e._message()) #  'The name of each corpus must be unique.')  # 
+
         return corpus
 
 @blp.route('/corpus/<int:corpus_id>')
@@ -43,12 +50,11 @@ class CorpusPicker(MethodView):
     @login_required()
     @blp.response(200, PlainCorpusSchema)
     def get(self, corpus_id):
-        return jwt_filter_by(CorpusModel, id=corpus_id).first_or_404()
+        return get_user_corpus(corpus_id)
 
     @login_required()
     def delete(self, corpus_id):
-        #db.session.delete(CorpusModel.query.filter_by(id=corpus_id, user_id=get_jwt_identity()).first_or_404())
-        db.session.delete(jwt_filter_by(CorpusModel, id=corpus_id).first_or_404())
+        db.session.delete(get_user_corpus(corpus_id))
         db.session.commit()
         return {'message': 'Corpus deleted'}
 
@@ -56,7 +62,7 @@ class CorpusPicker(MethodView):
     @blp.arguments(PlainCorpusSchema)
     @blp.response(200, PlainCorpusSchema)
     def put(self, corpus_data, corpus_id):
-        corpus = jwt_filter_by(CorpusModel, id=corpus_id).first_or_404()
+        corpus = get_user_corpus(corpus_id)
 
         for i in corpus_data:
             setattr(corpus, i, corpus_data[i])
@@ -70,6 +76,29 @@ class CorpusDocuments(MethodView):
     @login_required()
     @blp.response(200, PlainDocumentSchema(many=True))
     def get(self, corpus_id):
-        #return DocumentModel.query.filter_by(id=corpus_id, user_id=get_jwt_identity()).first_or_404()
-        corpus = jwt_filter_by(CorpusModel, id=corpus_id).first_or_404()
-        return corpus.documents
+        return get_user_corpus(corpus_id).documents
+
+@blp.route('/corpus/<int:corpus_id>/user/<int:user_id>')
+class CorpusUser(MethodView):
+    @login_required()
+    def post(self, corpus_id, user_id):
+        get_user_corpus(corpus_id)
+        db.session.add(UsersCorpora(corpus_id=corpus_id, user_id=user_id))
+        db.session.commit()
+
+        return {'message': 'Corpus shared with user'}
+
+    @login_required()
+    def delete(self, corpus_id, user_id):
+        get_user_corpus(corpus_id)
+
+        db.session.delete(
+            db.session.query(UsersCorpora).get_or_404({
+                'corpus_id':corpus_id,
+                'user_id':user_id,
+            })
+        )
+
+        db.session.commit()
+
+        return {'message': 'Corpus unshared with user'}
