@@ -27,7 +27,7 @@ def revoke_jwt():
     )
     db.session.add(revoked_jwt)
 
-    return revoked_jwt
+    #return revoked_jwt
 
 def get_current_user():
     return db.session.query(User).get(get_jwt_identity())

@@ -1,6 +1,7 @@
 from time import time
 
 from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from flask.views import MethodView
 from flask_jwt_extended import create_access_token, get_jwt_identity
 from flask_smorest import Blueprint, abort
@@ -73,17 +74,24 @@ class Login(MethodView):
             #& UserModel.password == pbkdf2_sha256.hash(login_data['password'])
         ).first()
 
-        if user and ph.verify(user.password, login_data['password']):
-            access_token = create_access_token(
-                identity=user.id,
-                additional_claims={'access_level': user.access_level}
-            )
-            return {'access_token': access_token}
+        if not user:
+            abort(401, message='Invalid credentials')
 
-        abort(401, message='Invalid credentials.')
+        try:
+            ph.verify(user.password, login_data['password'])
+        except VerifyMismatchError:
+            abort(401, message='Invalid credentials')
+
+        access_token = create_access_token(
+            identity=user.id,
+            additional_claims={'access_level': user.access_level}
+        )
+        return {'access_token': access_token}
+
 
 @blp.route('/logout')
 class Logout(MethodView):
     @login_required()
     def post(self):
-        return {'revoked_jwt': revoke_jwt()}
+        revoke_jwt()
+        return {'message': 'Logout successful'}
