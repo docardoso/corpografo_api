@@ -6,16 +6,16 @@ WORKDIR /app
 
 
 #Cache-unfriendly (not sure)
-#COPY . .
-#RUN pip install -r requirements.txt
+COPY . .
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 
 
 # Cache-friendly (not sure)
-COPY ./requirements.txt requirements.txt
-#RUN pip install -r requirements.txt
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
-COPY . .
+#COPY ./requirements.txt requirements.txt
+##RUN pip install -r requirements.txt
+#RUN pip install --no-cache-dir --upgrade -r requirements.txt
+#COPY . .
 
 
 

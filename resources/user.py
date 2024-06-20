@@ -11,7 +11,7 @@ from flask_smorest import Blueprint, abort
 from db import db
 from models import User, Corpus, Document
 from schemas import UserSchema, LoginSchema
-from util import login_required, revoke_jwt
+from util import login_required, revoke_jwt, gen_random_passphrase, send_email
 
 blp = Blueprint('Users', __name__, description='Operations on users')
 ph = PasswordHasher()
@@ -54,13 +54,23 @@ class Register(MethodView):
     @blp.arguments(UserSchema)
     @blp.response(201, UserSchema)
     def post(self, user_data):
-        user_data['password'] = ph.hash(user_data['password'])
+        password = gen_random_passphrase()
+        user_data['password'] = ph.hash(password)
         user = User(**user_data)
         db.session.add(user)
+
         try:
             db.session.commit()
         except IntegrityError as e:
             abort(400, message=e._message())
+
+        send_email(
+            'docardoso@letras.up.pt',
+            user.email,
+            'Senha para acesso ao Corpógrafo',
+            f'Sua senha é: {password}',
+        )
+
         return user
 
 @blp.route('/users')

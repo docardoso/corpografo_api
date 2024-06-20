@@ -10,13 +10,14 @@ class PlainDocumentSchema(Schema):
     content = fields.String(required=True)
 
 class LoginSchema(Schema):
-    email = fields.String(required=True)
+    email = fields.Email(required=True)
     password = fields.String(required=True, load_only=True)
 
-class PlainUserSchema(LoginSchema):
+class PlainUserSchema(Schema):
     id = fields.Int(dump_only=True)
     name = fields.String(required=True)
     access_level = fields.Int(required=True)
+    email = fields.Email(required=True)
 
 class CorpusSchema(PlainCorpusSchema):
     documents = fields.List(fields.Nested(PlainDocumentSchema()), dump_only=True)
