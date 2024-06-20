@@ -2,6 +2,7 @@ from db import db
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from typing import List
+from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
 class DocumentsUsers(db.Model):
     __tablename__ = 'documents_users'
@@ -42,22 +43,11 @@ class Corpus(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(nullable=False, unique=True)
 
-    documents: Mapped[List['Document']] = relationship(
-        back_populates='corpora',
-        secondary='corpora_documents',
-        #lazy='dynamic',
-        #cascade='all, delete',
-    )
-
-    users: Mapped[List['User']] = relationship(
-        back_populates='corpora',
-        secondary='users_corpora',
-        #lazy='dynamic',
-        #cascade='all, delete',
-    )
-
     user_relations: Mapped[List['UsersCorpora']] = relationship(back_populates='corpus')
     document_relations: Mapped[List['CorporaDocuments']] = relationship(back_populates='corpus')
+
+    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user')
+    documents: AssociationProxy[List['Document']] = association_proxy('document_relations', 'document')
 
 class Document(db.Model):
     __tablename__ = 'documents'
@@ -66,18 +56,11 @@ class Document(db.Model):
     name: Mapped[str] = mapped_column(nullable=False)
     content: Mapped[str] = mapped_column(nullable=False)
 
-    corpora: Mapped[List['Corpus']] = relationship(
-        back_populates='documents', 
-        secondary='corpora_documents',
-    )
-
-    users: Mapped[List['User']] = relationship(
-        back_populates='documents', 
-        secondary='documents_users',
-    )
-
     user_relations: Mapped[List['DocumentsUsers']] = relationship(back_populates='document')
     corpus_relations: Mapped[List['CorporaDocuments']] = relationship(back_populates='document')
+
+    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user')
+    corpora: AssociationProxy[List['Corpus']] = association_proxy('corpus_relations', 'corpus')
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -88,22 +71,11 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     access_level: Mapped[int] = mapped_column(nullable=False, default=0)
 
-    corpora: Mapped[List['Corpus']] = relationship(
-        back_populates='users',
-        secondary='users_corpora',
-        #lazy='dynamic',
-        #cascade='all, delete',
-    )
-
-    documents: Mapped[List['Document']] = relationship(
-        back_populates='users',
-        secondary='documents_users',
-        #lazy='dynamic',
-        #cascade='all, delete',
-    )
-
     document_relations: Mapped[List['DocumentsUsers']] = relationship(back_populates='user')
     corpus_relations: Mapped[List['UsersCorpora']] = relationship(back_populates='user')
+
+    documents: AssociationProxy[List['Document']] = association_proxy('document_relations', 'document')
+    corpora: AssociationProxy[List['Corpus']] = association_proxy('corpus_relations', 'corpus')
 
 class RevokedJWT(db.Model):
     __tablename__ = 'revoked_jwts'
