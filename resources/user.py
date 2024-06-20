@@ -1,5 +1,7 @@
 from time import time
 
+from sqlalchemy.exc import IntegrityError
+
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from flask.views import MethodView
@@ -55,7 +57,10 @@ class Register(MethodView):
         user_data['password'] = ph.hash(user_data['password'])
         user = User(**user_data)
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError as e:
+            abort(400, message=e._message())
         return user
 
 @blp.route('/users')
@@ -70,7 +75,7 @@ class Login(MethodView):
     @blp.arguments(LoginSchema)
     def post(self, login_data):
         user = User.query.filter(
-            User.username == login_data['username']
+            User.email == login_data['email']
             #& UserModel.password == pbkdf2_sha256.hash(login_data['password'])
         ).first()
 
@@ -86,7 +91,10 @@ class Login(MethodView):
             identity=user.id,
             additional_claims={'access_level': user.access_level}
         )
-        return {'access_token': access_token}
+        return {
+            'access_token': access_token,
+            'name': user.name
+        }
 
 
 @blp.route('/logout')
