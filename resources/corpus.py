@@ -35,7 +35,8 @@ class CorpusView(MethodView):
     @blp.arguments(PlainCorpusSchema)
     @blp.response(201, CorpusSchema)
     def post(self, corpus_data):
-        corpus = Corpus(**corpus_data, users=[get_current_user()])
+        corpus = Corpus(**corpus_data)
+        corpus.users.append(get_current_user())
         db.session.add(corpus)
         try:
             db.session.commit()

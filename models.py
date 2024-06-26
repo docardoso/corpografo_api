@@ -46,7 +46,7 @@ class Corpus(db.Model):
     user_relations: Mapped[List['UsersCorpora']] = relationship(back_populates='corpus')
     document_relations: Mapped[List['CorporaDocuments']] = relationship(back_populates='corpus')
 
-    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user')
+    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user', creator=lambda user: UsersCorpora(user=user))
     documents: AssociationProxy[List['Document']] = association_proxy('document_relations', 'document')
 
 class Document(db.Model):
