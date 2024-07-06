@@ -53,13 +53,13 @@ class Document(db.Model):
     __tablename__ = 'documents'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(nullable=False, unique=True)
     content: Mapped[str] = mapped_column(nullable=False)
 
     user_relations: Mapped[List['DocumentsUsers']] = relationship(back_populates='document')
     corpus_relations: Mapped[List['CorporaDocuments']] = relationship(back_populates='document')
 
-    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user')
+    users: AssociationProxy[List['User']] = association_proxy('user_relations', 'user', creator=lambda user: DocumentsUsers(user=user))
     corpora: AssociationProxy[List['Corpus']] = association_proxy('corpus_relations', 'corpus')
 
 class User(db.Model):

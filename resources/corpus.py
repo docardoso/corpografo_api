@@ -33,7 +33,7 @@ class CorpusView(MethodView):
 
     @login_required()
     @blp.arguments(PlainCorpusSchema)
-    @blp.response(201, CorpusSchema)
+    @blp.response(201, PlainCorpusSchema)
     def post(self, corpus_data):
         corpus = Corpus(**corpus_data)
         corpus.users.append(get_current_user())
@@ -49,7 +49,7 @@ class CorpusView(MethodView):
 @blp.route('/corpus/<int:corpus_id>')
 class CorpusPicker(MethodView):
     @login_required()
-    @blp.response(200, PlainCorpusSchema)
+    @blp.response(200, CorpusSchema)
     def get(self, corpus_id):
         return get_user_corpus(corpus_id)
 
