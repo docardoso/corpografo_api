@@ -103,7 +103,8 @@ class Login(MethodView):
         )
         return {
             'access_token': access_token,
-            'name': user.name
+            'name': user.name,
+            'id': user.id,
         }
 
 

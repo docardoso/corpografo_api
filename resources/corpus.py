@@ -1,21 +1,14 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask_jwt_extended import get_jwt_identity
 
 from sqlalchemy.exc import IntegrityError
 
 from db import db
-from models import Corpus, User, UsersCorpora
-from schemas import CorpusSchema, PlainCorpusSchema, PlainDocumentSchema
-from util import login_required, get_current_user
+from models import Corpus, UsersCorpora, CorporaDocuments, User
+from schemas import CorpusSchema, PlainCorpusSchema
+from util import login_required, get_current_user, get_user_corpus, get_user_document
 
 blp = Blueprint('Corpora', __name__, description='Operations on corpora')
-
-def get_user_corpus(corpus_id):
-    return db.session.query(UsersCorpora).get_or_404({
-        'corpus_id':corpus_id,
-        'user_id':get_jwt_identity(),
-    }).corpus
 
 @blp.route('/corpora')
 class Corpora(MethodView):
@@ -53,53 +46,86 @@ class CorpusPicker(MethodView):
     def get(self, corpus_id):
         return get_user_corpus(corpus_id)
 
-    @login_required()
-    def delete(self, corpus_id):
-        db.session.delete(get_user_corpus(corpus_id))
-        db.session.commit()
-        return {'message': 'Corpus deleted'}
+    #@login_required()
+    #def delete(self, corpus_id):
+    #    db.session.delete(get_user_corpus(corpus_id))
+    #    db.session.commit()
+    #    return {'message': 'Corpus deleted'}
 
-    @login_required()
-    @blp.arguments(PlainCorpusSchema)
-    @blp.response(200, PlainCorpusSchema)
-    def put(self, corpus_data, corpus_id):
-        corpus = get_user_corpus(corpus_id)
+    #@login_required()
+    #@blp.arguments(PlainCorpusSchema)
+    #@blp.response(200, PlainCorpusSchema)
+    #def put(self, corpus_data, corpus_id):
+    #    corpus = get_user_corpus(corpus_id)
 
-        for i in corpus_data:
-            setattr(corpus, i, corpus_data[i])
+    #    for i in corpus_data:
+    #        setattr(corpus, i, corpus_data[i])
 
-        db.session.add(corpus)
-        db.session.commit()
-        return corpus
+    #    db.session.add(corpus)
+    #    db.session.commit()
+    #    return corpus
 
-@blp.route('/corpus/<int:corpus_id>/documents')
-class CorpusDocuments(MethodView):
-    @login_required()
-    @blp.response(200, PlainDocumentSchema(many=True))
-    def get(self, corpus_id):
-        return get_user_corpus(corpus_id).documents
+#@blp.route('/corpus/<int:corpus_id>/documents')
+#class CorpusDocuments(MethodView):
+#    @login_required()
+#    @blp.response(200, PlainDocumentSchema(many=True))
+#    def get(self, corpus_id):
+#        return get_user_corpus(corpus_id).documents
 
-@blp.route('/corpus/<int:corpus_id>/user/<int:user_id>')
+@blp.route('/corpus/<int:corpus_id>/document/<int:document_id>')
 class CorpusUser(MethodView):
     @login_required()
-    def post(self, corpus_id, user_id):
+    def post(self, corpus_id, document_id):
         get_user_corpus(corpus_id)
+        get_user_document(document_id)
+        db.session.add(CorporaDocuments(corpus_id=corpus_id, document_id=document_id))
+        db.session.commit()
+
+        return {'message': 'Document added to corpus'}
+
+    @login_required()
+    def delete(self, corpus_id, document_id):
+        get_user_corpus(corpus_id)
+        get_user_document(document_id)
+        db.session.delete(
+            db.session.query(CorporaDocuments).get({
+                'corpus_id': corpus_id,
+                'document_id': document_id
+            })
+        )
+        db.session.commit()
+
+        return {'message': 'Document removed from corpus'}
+
+
+
+
+
+
+
+
+@blp.route('/corpus/<int:corpus_id>/user/<user_email>')
+class CorpusUserEmail(MethodView):
+    @login_required()
+    def post(self, corpus_id, user_email):
+        get_user_corpus(corpus_id)
+        user_id = db.session.query(User).filter_by(email=user_email).first().id
         db.session.add(UsersCorpora(corpus_id=corpus_id, user_id=user_id))
         db.session.commit()
 
         return {'message': 'Corpus shared with user'}
 
+@blp.route('/corpus/<int:corpus_id>/user/<int:user_id>')
+class CorpusUserId(MethodView):
     @login_required()
     def delete(self, corpus_id, user_id):
         get_user_corpus(corpus_id)
-
         db.session.delete(
-            db.session.query(UsersCorpora).get_or_404({
-                'corpus_id':corpus_id,
-                'user_id':user_id,
+            db.session.query(UsersCorpora).get({
+                'corpus_id': corpus_id,
+                'user_id': user_id,
             })
         )
-
         db.session.commit()
 
         return {'message': 'Corpus unshared with user'}

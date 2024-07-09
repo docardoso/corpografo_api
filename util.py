@@ -4,7 +4,7 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 from models import RevokedJWT
 from db import db
 import time
-from models import User
+from models import User, DocumentsUsers, UsersCorpora
 import os
 import random
 import nltk
@@ -56,3 +56,15 @@ def send_email(sender, recipient, subject, body):
         smtp.starttls()
         smtp.login(smtp_username, smtp_password)
         smtp.sendmail(sender, recipient, message.encode('utf-8'))
+
+def get_user_document(document_id):
+    return db.session.query(DocumentsUsers).get_or_404({
+        'document_id':document_id,
+        'user_id':get_jwt_identity(),
+    }).document
+
+def get_user_corpus(corpus_id):
+    return db.session.query(UsersCorpora).get_or_404({
+        'corpus_id':corpus_id,
+        'user_id':get_jwt_identity(),
+    }).corpus

@@ -3,18 +3,13 @@ from flask.views import MethodView
 from flask_jwt_extended import get_jwt_identity
 
 from db import db
-from models import Document, Corpus, DocumentsUsers
+from models import Document, User, DocumentsUsers
 from schemas import DocumentSchema, PlainDocumentSchema
-from util import login_required, get_current_user
+from util import login_required, get_current_user, get_user_document
+
+from sqlalchemy.exc import IntegrityError
 
 blp = Blueprint("Documents", __name__, description="Operations on documents")
-
-def get_user_document(document_id):
-    return db.session.query(DocumentsUsers).get_or_404({
-        'document_id':document_id,
-        'user_id':get_jwt_identity(),
-    }).document
-
 
 @blp.route("/document/<int:document_id>")
 class DocumentPicker(MethodView):
@@ -23,22 +18,22 @@ class DocumentPicker(MethodView):
     def get(self, document_id):
         return get_user_document(document_id)
 
-    def delete(self, document_id):
-        db.session.delete(Document.get_or_404(document_id))
-        db.session.commit()
-        return {'message': 'Document deleted'}
+    #def delete(self, document_id):
+    #    db.session.delete(Document.get_or_404(document_id))
+    #    db.session.commit()
+    #    return {'message': 'Document deleted'}
 
-    @blp.arguments(DocumentSchema)
-    @blp.response(200, DocumentSchema)
-    def put(self, document_data, document_id):
-        document = Document.get_or_404(document_id)
+    #@blp.arguments(DocumentSchema)
+    #@blp.response(200, DocumentSchema)
+    #def put(self, document_data, document_id):
+    #    document = Document.get_or_404(document_id)
 
-        for k in document_data:
-            setattr(document, k, document_data[k])
+    #    for k in document_data:
+    #        setattr(document, k, document_data[k])
 
-        db.session.add(document)
-        db.session.commit()
-        return document
+    #    db.session.add(document)
+    #    db.session.commit()
+    #    return document
 
 @blp.route("/document")
 class DocumentMethodView(MethodView):
@@ -61,3 +56,29 @@ class DocumentMethodView(MethodView):
     @blp.response(200, PlainDocumentSchema(many=True))
     def get(self):
         return get_current_user().documents
+
+@blp.route('/document/<int:document_id>/user/<user_email>')
+class DocumentUserEmail(MethodView):
+    @login_required()
+    def post(self, document_id, user_email):
+        get_user_document(document_id)
+        user_id = db.session.query(User).filter_by(email=user_email).first().id
+        db.session.add(DocumentsUsers(document_id=document_id, user_id=user_id))
+        db.session.commit()
+
+        return {'message': 'Document shared with user'}
+
+@blp.route('/document/<int:document_id>/user/<int:user_id>')
+class DocumentUserId(MethodView):
+    @login_required()
+    def delete(self, document_id, user_id):
+        get_user_document(document_id)
+        db.session.delete(
+            db.session.query(DocumentsUsers).get({
+                'document_id': document_id,
+                'user_id': user_id,
+            })
+        )
+        db.session.commit()
+
+        return {'message': 'Document unshared with user'}
