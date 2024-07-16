@@ -50,8 +50,6 @@ def send_email(sender, recipient, subject, body):
     smtp_username = os.getenv('SMTP_USERNAME')
     smtp_password = os.getenv('SMTP_PASSWORD')
 
-    print(smtp_server, smtp_port)
-
     with smtplib.SMTP(smtp_server, smtp_port) as smtp:
         smtp.starttls()
         smtp.login(smtp_username, smtp_password)

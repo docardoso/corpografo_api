@@ -10,7 +10,7 @@ from db import db
 
 import models
 
-from resources import CorpusBlueprint, DocumentBlueprint, UserBlueprint
+from resources import *
 
 def create_app(db_url=None):
     app = Flask(__name__)
@@ -41,6 +41,9 @@ def create_app(db_url=None):
     api.register_blueprint(CorpusBlueprint)
     api.register_blueprint(DocumentBlueprint)
     api.register_blueprint(UserBlueprint)
+    api.register_blueprint(LanguageBlueprint)
+    api.register_blueprint(OrganizationBlueprint)
+    api.register_blueprint(AuthorBlueprint)
 
     jwt = JWTManager(app)
 

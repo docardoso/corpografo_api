@@ -68,7 +68,7 @@ class Register(MethodView):
             'docardoso@letras.up.pt',
             user.email,
             'Senha para acesso ao Corpógrafo',
-            f'Sua senha é: {password}',
+            f'Sua senha é:\n{password}',
         )
 
         return user
