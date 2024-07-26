@@ -16,8 +16,8 @@ class LightweightDocumentSchema(Schema):
     name = fields.String(required=True)
 
 class PlainDocumentSchema(LightweightDocumentSchema):
-    content = fields.String(required=True)
-    input_file = fields.String()
+    content = fields.String()
+    input_file = fields.String(required=True)
     citation = fields.String(allow_none=True)
     language_id = fields.Int(allow_none=True)
     source_id = fields.Int(allow_none=True)

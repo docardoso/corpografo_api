@@ -1,3 +1,7 @@
+import collections as cl
+from sqlalchemy.orm import joinedload
+from flask_jwt_extended import get_jwt_identity
+from nltk.util import everygrams
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 
@@ -97,13 +101,6 @@ class CorpusUser(MethodView):
 
         return {'message': 'Document removed from corpus'}
 
-
-
-
-
-
-
-
 @blp.route('/corpus/<int:corpus_id>/user/<user_email>')
 class CorpusUserEmail(MethodView):
     @login_required()
@@ -129,3 +126,27 @@ class CorpusUserId(MethodView):
         db.session.commit()
 
         return {'message': 'Corpus unshared with user'}
+
+@blp.route('/ngram/<int:corpus_id>/<int:min_len>/<int:max_len>/<case_sensitive>')
+class Ngram(MethodView):
+    @login_required()
+    def get(self, corpus_id, min_len, max_len, case_sensitive):
+        corpus = db.session.query(
+            UsersCorpora
+        ).options(
+            joinedload(
+                UsersCorpora.corpus
+            ).joinedload(
+                Corpus.document_relations
+            ).joinedload(
+                CorporaDocuments.document
+            )
+        ).get_or_404({
+            'corpus_id':corpus_id,
+            'user_id':get_jwt_identity(),
+        }).corpus
+
+        if case_sensitive == 'False':
+            return [corpus.name, cl.Counter(' '.join(j) for i in corpus.documents for j in everygrams(i.content.lower().split(), min_len, max_len))]
+
+        return [corpus.name, cl.Counter(' '.join(j) for i in corpus.documents for j in everygrams(i.content.split(), min_len, max_len))]

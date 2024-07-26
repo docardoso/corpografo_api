@@ -4,7 +4,7 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt, get_jwt_identity
 from models import RevokedJWT
 from db import db
 import time
-from models import User, DocumentsUsers, UsersCorpora
+from models import User, DocumentsUsers, UsersCorpora, Document
 import os
 import random
 import nltk
@@ -39,8 +39,11 @@ def revoke_jwt():
 
     #return revoked_jwt
 
-def get_current_user():
-    return db.session.query(User).get(get_jwt_identity())
+def get_current_user(options=None):
+    try:
+        return db.session.query(User).options(options).get(get_jwt_identity())
+    except AttributeError:
+        return db.session.query(User).get(get_jwt_identity())
 
 def send_email(sender, recipient, subject, body):
     message = f'Subject: {subject}\n\n{body}'
@@ -55,7 +58,7 @@ def send_email(sender, recipient, subject, body):
         smtp.login(smtp_username, smtp_password)
         smtp.sendmail(sender, recipient, message.encode('utf-8'))
 
-def get_user_document(document_id):
+def get_user_document(document_id) -> Document:
     return db.session.query(DocumentsUsers).get_or_404({
         'document_id':document_id,
         'user_id':get_jwt_identity(),

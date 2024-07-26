@@ -16,6 +16,7 @@ class DocumentsUsers(db.Model):
         primary_key=True,
     )
 
+    #document: Mapped['Document'] = relationship(back_populates='user_relations', lazy='joined')
     document: Mapped['Document'] = relationship(back_populates='user_relations')
     user: Mapped['User'] = relationship(back_populates='document_relations')
 
@@ -75,7 +76,7 @@ class Document(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
-    content: Mapped[str] = mapped_column()
+    content: Mapped[str] = mapped_column(nullable=True)
     input_file: Mapped[str] = mapped_column()
 
     citation: Mapped[str] = mapped_column(nullable=True)
