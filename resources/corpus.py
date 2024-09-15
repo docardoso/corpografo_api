@@ -1,3 +1,4 @@
+import re
 import collections as cl
 from sqlalchemy.orm import joinedload
 from flask_jwt_extended import get_jwt_identity
@@ -150,3 +151,59 @@ class Ngram(MethodView):
             return [corpus.name, cl.Counter(' '.join(j) for i in corpus.documents for j in everygrams(i.content.lower().split(), min_len, max_len))]
 
         return [corpus.name, cl.Counter(' '.join(j) for i in corpus.documents for j in everygrams(i.content.split(), min_len, max_len))]
+
+@blp.route('/regex_window/<int:corpus_id>/<regex>/<case_sensitive>/<int:left_window_size>/<int:right_window_size>')
+class RegexWindow(MethodView):
+    @login_required()
+    def get(self, corpus_id, regex, case_sensitive, left_window_size, right_window_size):
+        corpus = db.session.query(
+            UsersCorpora
+        ).options(
+            joinedload(
+                UsersCorpora.corpus
+            ).joinedload(
+                Corpus.document_relations
+            ).joinedload(
+                CorporaDocuments.document
+            )
+        ).get_or_404({
+            'corpus_id':corpus_id,
+            'user_id':get_jwt_identity(),
+        }).corpus
+
+
+        flags = re.IGNORECASE if case_sensitive == 'True' else 0
+        regex = f'(?:\w+\W+){{{left_window_size}}}{regex}(?:\w+\W+){{{right_window_size}}}'
+
+        cnt = cl.Counter(
+            j for i in corpus.documents for j in re.findall(regex, i.content, flags)
+        )
+
+        return [corpus.name, cnt]
+
+@blp.route('/regex_phrases/<int:corpus_id>/<regex>/<case_sensitive>')
+class RegexPhrases(MethodView):
+    @login_required()
+    def get(self, corpus_id, regex, case_sensitive):
+        corpus = db.session.query(
+            UsersCorpora
+        ).options(
+            joinedload(
+                UsersCorpora.corpus
+            ).joinedload(
+                Corpus.document_relations
+            ).joinedload(
+                CorporaDocuments.document
+            )
+        ).get_or_404({
+            'corpus_id':corpus_id,
+            'user_id':get_jwt_identity(),
+        }).corpus
+
+
+        flags = re.IGNORECASE if case_sensitive == 'True' else 0
+
+        return [
+            corpus.name, 
+            [j for i in corpus.documents for j in re.findall(f'.*{regex}.*', i.content, flags)]
+        ]
